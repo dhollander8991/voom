@@ -1,0 +1,47 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.image {
+  object-fit: cover;
+}
+
+.source {
+  margin-top: var(--mantine-spacing-md);
+  align-self: flex-start;
+}
+
+.title {
+  margin-top: var(--mantine-spacing-sm);
+  font-size: rem(16px);
+  line-height: 1.35;
+}
+
+.description {
+  margin-top: var(--mantine-spacing-xs);
+}
+
+.footer {
+  margin-top: var(--mantine-spacing-md);
+}
+
+.author {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  color: var(--mantine-color-teal-text);
+}
+
+.author:hover {
+  text-decoration: underline;
+}
+
+.date {
+  white-space: nowrap;
+}
+
+.readMore {
+  margin-top: var(--mantine-spacing-md);
+  align-self: flex-start;
+}

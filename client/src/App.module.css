@@ -1,0 +1,18 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  padding-top: var(--mantine-spacing-xl);
+  padding-bottom: var(--mantine-spacing-xl);
+}
+
+.footer {
+  border-top: rem(1px) solid var(--mantine-color-default-border);
+  padding-top: var(--mantine-spacing-lg);
+  padding-bottom: var(--mantine-spacing-lg);
+}

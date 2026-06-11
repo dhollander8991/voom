@@ -1,0 +1,8 @@
+.container {
+  padding-top: rem(64px);
+  padding-bottom: rem(64px);
+}
+
+.icon {
+  color: var(--mantine-color-dimmed);
+}

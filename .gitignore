@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# build output
+dist/
+/out-tsc
+/tmp
+
+# local data + secrets
+**/data/*.db
+**/data/*.db-*
+.env
+*.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# coverage
+coverage/
+
+# editor
+.vscode/*
+.idea/
+.DS_Store
