@@ -108,6 +108,18 @@ describe('App', () => {
     });
   });
 
+  it('clears the search input when the clear button is clicked', async () => {
+    mockedFetchNews.mockResolvedValue(buildNewsPage([buildArticle()]));
+    render(<App />);
+
+    const input = screen.getByRole('textbox', { name: /search drone news/i });
+    await userEvent.type(input, 'drone');
+    expect(input).toHaveValue('drone');
+
+    await userEvent.click(screen.getByRole('button', { name: /clear search/i }));
+    expect(input).toHaveValue('');
+  });
+
   it('opens the author modal when an author is clicked', async () => {
     mockedFetchNews.mockResolvedValue(buildNewsPage([buildArticle()]));
     mockedFetchAuthor.mockResolvedValue({

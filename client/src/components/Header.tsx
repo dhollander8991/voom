@@ -1,4 +1,4 @@
-import { Container, Group, TextInput, Title } from '@mantine/core';
+import { Container, Group, Input, TextInput, Title } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 import classes from './Header.module.css';
 
@@ -23,6 +23,12 @@ export function Header({ searchValue, onSearchChange }: HeaderProps) {
             placeholder="Search drone news"
             aria-label="Search drone news"
             leftSection={<IconSearch size={16} stroke={1.5} />}
+            rightSectionPointerEvents="all"
+            rightSection={
+              searchValue ? (
+                <Input.ClearButton aria-label="Clear search" onClick={() => onSearchChange('')} />
+              ) : null
+            }
           />
         </Group>
       </Container>
