@@ -1,8 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from '../test/render';
 import { NewsCard } from './NewsCard';
 import type { Article } from '../types';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function buildArticle(overrides: Partial<Article> = {}): Article {
   return {
@@ -51,12 +55,28 @@ describe('NewsCard', () => {
     expect(image).toHaveAttribute('referrerpolicy', 'no-referrer');
   });
 
-  it('calls onAuthorClick with the author name when the author is clicked', async () => {
+  it('opens the article in a new tab when the card is clicked', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    render(<NewsCard article={buildArticle()} onAuthorClick={vi.fn()} />);
+
+    await userEvent.click(screen.getByText('Drone delivers medical supplies'));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://example.com/article',
+      '_blank',
+      expect.stringContaining('noopener'),
+    );
+  });
+
+  it('clicking the author opens the modal without navigating to the article', async () => {
     const onAuthorClick = vi.fn();
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
     render(<NewsCard article={buildArticle()} onAuthorClick={onAuthorClick} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Jane Doe' }));
 
     expect(onAuthorClick).toHaveBeenCalledWith('Jane Doe');
+    // stopPropagation: the author click must NOT trigger the card navigation.
+    expect(openSpy).not.toHaveBeenCalled();
   });
 });

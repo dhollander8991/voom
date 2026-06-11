@@ -15,7 +15,14 @@ export function AuthorModal({ authorName, onClose }: AuthorModalProps) {
   const isResolved = !isLoading && !isError;
 
   return (
-    <Modal opened={isOpen} onClose={onClose} title={authorName ?? ''} centered radius="md">
+    <Modal
+      opened={isOpen}
+      onClose={onClose}
+      title={authorName ?? ''}
+      centered
+      radius="md"
+      styles={{ title: { fontWeight: 700 } }}
+    >
       {isLoading ? (
         <Stack gap="sm">
           <Skeleton height={12} width="90%" />

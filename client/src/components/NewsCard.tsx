@@ -18,11 +18,32 @@ const IMAGE_FALLBACK =
     </svg>`,
   );
 
-/** A single news article card with image, source, title, description, and a
- * footer holding the (clickable) author and a relative publish time. */
+/** A single news article card. The whole card is clickable and opens the
+ * article; the author button and "Read more" link stop propagation so they
+ * keep their own behavior instead of navigating to the article. */
 export function NewsCard({ article, onAuthorClick }: NewsCardProps) {
+  const openArticle = () => {
+    window.open(article.url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
-    <Card withBorder padding="lg" radius="md" className={classes.card}>
+    <Card
+      withBorder
+      padding="lg"
+      radius="md"
+      className={classes.card}
+      onClick={openArticle}
+      // Keyboard access for the card link; nested controls (author/Read more)
+      // are focusable on their own, so only act when the card itself is focused.
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' && event.target === event.currentTarget) {
+          openArticle();
+        }
+      }}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open article: ${article.title}`}
+    >
       <Card.Section>
         <Image
           src={article.imageUrl}
@@ -57,7 +78,11 @@ export function NewsCard({ article, onAuthorClick }: NewsCardProps) {
         {article.author ? (
           <UnstyledButton
             className={classes.author}
-            onClick={() => onAuthorClick(article.author as string)}
+            onClick={(event) => {
+              // Don't let the author click bubble up to the card's navigation.
+              event.stopPropagation();
+              onAuthorClick(article.author as string);
+            }}
           >
             {article.author}
           </UnstyledButton>
@@ -79,6 +104,9 @@ export function NewsCard({ article, onAuthorClick }: NewsCardProps) {
         size="sm"
         fw={600}
         className={classes.readMore}
+        // The card already navigates on click; stop here so the link doesn't
+        // also trigger the card handler and open a second tab.
+        onClick={(event) => event.stopPropagation()}
       >
         Read more
       </Anchor>

@@ -2,6 +2,21 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.card:hover {
+  transform: scale(1.02);
+  box-shadow: var(--mantine-shadow-lg);
+}
+
+/* Keep the keyboard-focus ring visible without the pointer-hover lift. */
+.card:focus-visible {
+  outline: rem(2px) solid var(--mantine-color-teal-filled);
+  outline-offset: rem(2px);
 }
 
 .image {
