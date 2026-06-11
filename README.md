@@ -80,16 +80,22 @@ Base URL in dev: `http://localhost:3001`. The Vite dev server proxies `/api/*` h
 
 ### `GET /api/news`
 
-Latest cached articles, newest first.
+One page of cached articles, newest first.
 
 | Param | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `q` | string | — | Optional. Space-separated keywords, AND-combined, case-insensitive across title/description/content. |
-| `limit` | number | 100 | Capped at 100. |
+| `page` | number | 1 | 1-based. Clamped to ≥ 1. |
+| `pageSize` | number | 20 | Items per page. Capped at 100. |
+
+Returns the page plus pagination metadata. `total` is the count of all matching articles (not just this page), so the client can render page controls.
 
 ```json
 {
-  "total": 1,
+  "total": 188,
+  "page": 1,
+  "pageSize": 20,
+  "totalPages": 10,
   "articles": [
     {
       "id": "b87376603b46a9195c2981eedc0db1de900d8b67",

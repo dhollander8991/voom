@@ -5,27 +5,24 @@ export interface NewsRouterOptions {
   articleRepository: ArticleRepository;
 }
 
-const DEFAULT_LIMIT = 100;
-const MAX_LIMIT = 100;
+const DEFAULT_PAGE_SIZE = 20;
 
 /**
- * GET /api/news?q=<keywords>&limit=<n>
- * Returns the latest stored articles, optionally filtered by keywords.
+ * GET /api/news?q=<keywords>&page=<n>&pageSize=<n>
+ * Returns one page of the latest stored articles plus pagination metadata
+ * ({ articles, total, page, pageSize, totalPages }). The repository clamps page
+ * (min 1) and pageSize (1..100).
  */
 export function createNewsRouter({ articleRepository }: NewsRouterOptions): Router {
   const router = Router();
 
   router.get('/', (request, response) => {
     const query = typeof request.query.q === 'string' ? request.query.q : undefined;
+    const page = Number(request.query.page) || 1;
+    const pageSize = Number(request.query.pageSize) || DEFAULT_PAGE_SIZE;
 
-    const requestedLimit = Number(request.query.limit);
-    const limit =
-      Number.isFinite(requestedLimit) && requestedLimit > 0
-        ? Math.min(requestedLimit, MAX_LIMIT)
-        : DEFAULT_LIMIT;
-
-    const articles = articleRepository.findLatest({ query, limit });
-    response.json({ articles, total: articles.length });
+    const result = articleRepository.findLatest({ query, page, pageSize });
+    response.json(result);
   });
 
   return router;

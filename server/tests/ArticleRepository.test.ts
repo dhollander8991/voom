@@ -35,7 +35,7 @@ describe('ArticleRepository', () => {
   it('inserts articles via upsertMany', () => {
     repository.upsertMany([buildArticle()]);
 
-    const results = repository.findLatest();
+    const { articles: results } = repository.findLatest();
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({ id: 'id-1', title: 'Drone delivers package' });
   });
@@ -44,7 +44,7 @@ describe('ArticleRepository', () => {
     repository.upsertMany([buildArticle({ title: 'Original title' })]);
     repository.upsertMany([buildArticle({ id: 'different-id', title: 'Updated title' })]);
 
-    const results = repository.findLatest();
+    const { articles: results } = repository.findLatest();
     expect(results).toHaveLength(1);
     expect(results[0].title).toBe('Updated title');
   });
@@ -56,7 +56,7 @@ describe('ArticleRepository', () => {
       buildArticle({ id: 'mid', url: 'https://example.com/mid', publishedAt: '2026-03-01T00:00:00Z' }),
     ]);
 
-    const orderedIds = repository.findLatest().map((article) => article.id);
+    const orderedIds = repository.findLatest().articles.map((article) => article.id);
     expect(orderedIds).toEqual(['new', 'mid', 'old']);
   });
 
@@ -68,7 +68,7 @@ describe('ArticleRepository', () => {
       buildArticle({ id: 'no-match', url: 'https://example.com/4', title: 'Unrelated', description: 'nothing', content: 'nothing' }),
     ]);
 
-    const matchedIds = repository.findLatest({ query: 'quadcopter' }).map((article) => article.id).sort();
+    const matchedIds = repository.findLatest({ query: 'quadcopter' }).articles.map((article) => article.id).sort();
     expect(matchedIds).toEqual(['in-content', 'in-desc', 'in-title']);
   });
 
@@ -78,26 +78,42 @@ describe('ArticleRepository', () => {
       buildArticle({ id: 'one', url: 'https://example.com/one', title: 'Drone surveillance', description: null, content: null }),
     ]);
 
-    const matchedIds = repository.findLatest({ query: 'drone delivery' }).map((article) => article.id);
+    const matchedIds = repository.findLatest({ query: 'drone delivery' }).articles.map((article) => article.id);
     expect(matchedIds).toEqual(['both']);
   });
 
-  it('returns an empty array when nothing matches', () => {
+  it('returns an empty page when nothing matches', () => {
     repository.upsertMany([buildArticle()]);
-    expect(repository.findLatest({ query: 'helicopter' })).toEqual([]);
+    const result = repository.findLatest({ query: 'helicopter' });
+    expect(result.articles).toEqual([]);
+    expect(result.total).toBe(0);
+    expect(result.totalPages).toBe(1);
   });
 
-  it('respects the limit', () => {
+  it('paginates: pageSize bounds the page, total/totalPages reflect all matches', () => {
     repository.upsertMany(
-      Array.from({ length: 5 }, (_unused, index) =>
+      Array.from({ length: 25 }, (_unused, index) =>
         buildArticle({
           id: `id-${index}`,
           url: `https://example.com/${index}`,
-          publishedAt: `2026-06-0${index + 1}T00:00:00Z`,
+          // Zero-padded so lexical order matches chronological order.
+          publishedAt: `2026-06-01T00:00:${String(index).padStart(2, '0')}Z`,
         }),
       ),
     );
 
-    expect(repository.findLatest({ limit: 2 })).toHaveLength(2);
+    const firstPage = repository.findLatest({ page: 1, pageSize: 10 });
+    expect(firstPage.articles).toHaveLength(10);
+    expect(firstPage.total).toBe(25);
+    expect(firstPage.page).toBe(1);
+    expect(firstPage.totalPages).toBe(3);
+
+    const lastPage = repository.findLatest({ page: 3, pageSize: 10 });
+    expect(lastPage.articles).toHaveLength(5);
+
+    // Page 1 (newest first) and page 2 don't overlap.
+    const firstIds = new Set(firstPage.articles.map((article) => article.id));
+    const secondPage = repository.findLatest({ page: 2, pageSize: 10 });
+    expect(secondPage.articles.every((article) => !firstIds.has(article.id))).toBe(true);
   });
 });

@@ -88,7 +88,21 @@ describe('API endpoints', () => {
       const response = await request(buildApp()).get('/api/news').query({ q: 'helicopter' });
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual({ articles: [], total: 0 });
+      expect(response.body).toMatchObject({ articles: [], total: 0, totalPages: 1 });
+    });
+
+    it('paginates with page and pageSize', async () => {
+      articleRepository.upsertMany(
+        Array.from({ length: 25 }, (_unused, index) =>
+          buildArticle({ id: `id-${index}`, url: `https://example.com/${index}` }),
+        ),
+      );
+
+      const response = await request(buildApp()).get('/api/news').query({ page: 2, pageSize: 10 });
+
+      expect(response.status).toBe(200);
+      expect(response.body.articles).toHaveLength(10);
+      expect(response.body).toMatchObject({ total: 25, page: 2, pageSize: 10, totalPages: 3 });
     });
   });
 

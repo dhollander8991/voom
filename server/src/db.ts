@@ -2,12 +2,17 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
-import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from './schema.js';
 
-/** A Drizzle database handle bound to our schema. */
-export type AppDatabase = BetterSQLite3Database<typeof schema>;
+/**
+ * A Drizzle database handle bound to our schema. Derived from `drizzle()`'s
+ * return type so it includes `$client` (the underlying better-sqlite3
+ * connection, used to `.close()` in tests) — the `BetterSQLite3Database` class
+ * alone does not expose it.
+ */
+export type AppDatabase = ReturnType<typeof drizzle<typeof schema>>;
 
 export interface OpenDatabaseOptions {
   databasePath: string;

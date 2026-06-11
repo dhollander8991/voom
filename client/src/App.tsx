@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Container, Text } from '@mantine/core';
+import { useEffect, useState } from 'react';
+import { Container, Group, Pagination, Text } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { Header } from './components/Header';
 import { NewsFeed } from './components/NewsFeed';
@@ -9,14 +9,23 @@ import classes from './App.module.css';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
-/** Single-page VOOM Drone News app: header search drives a debounced news
- * feed; clicking an author opens a Wikipedia-backed modal. */
+/** Single-page VOOM Drone News app: header search drives a debounced, paginated
+ * news feed; clicking an author opens a Claude-backed modal. */
 export function App() {
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearch] = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
+  const [page, setPage] = useState(1);
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
 
-  const { data: articles = [], isPending, isError, refetch } = useNews({ query: debouncedSearch });
+  // A new search should always start from page 1, not whatever page we were on.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const { data, isPending, isError, refetch } = useNews({ query: debouncedSearch, page });
+  const articles = data?.articles ?? [];
+  const totalPages = data?.totalPages ?? 1;
+  const showPagination = !isPending && !isError && totalPages > 1;
 
   return (
     <div className={classes.app}>
@@ -31,6 +40,12 @@ export function App() {
           onRetry={() => refetch()}
           onAuthorClick={setSelectedAuthor}
         />
+
+        {showPagination ? (
+          <Group justify="center" mt="xl">
+            <Pagination total={totalPages} value={page} onChange={setPage} />
+          </Group>
+        ) : null}
       </Container>
 
       <footer className={classes.footer}>

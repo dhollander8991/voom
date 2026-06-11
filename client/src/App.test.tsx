@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { render, screen, waitFor } from './test/render';
 import { App } from './App';
-import { fetchNews, fetchAuthor } from './lib/api';
+import { fetchNews, fetchAuthor, type NewsPage } from './lib/api';
 import type { Article } from './types';
 
 vi.mock('./lib/api', () => ({
@@ -28,6 +28,17 @@ function buildArticle(overrides: Partial<Article> = {}): Article {
   };
 }
 
+function buildNewsPage(articles: Article[], overrides: Partial<NewsPage> = {}): NewsPage {
+  return {
+    articles,
+    total: articles.length,
+    page: 1,
+    pageSize: 20,
+    totalPages: 1,
+    ...overrides,
+  };
+}
+
 describe('App', () => {
   beforeEach(() => {
     mockedFetchNews.mockReset();
@@ -35,7 +46,7 @@ describe('App', () => {
   });
 
   it('shows loading skeletons, then renders fetched articles', async () => {
-    mockedFetchNews.mockResolvedValue([buildArticle()]);
+    mockedFetchNews.mockResolvedValue(buildNewsPage([buildArticle()]));
     const { container } = render(<App />);
 
     // Skeletons render synchronously before the fetch resolves.
@@ -45,7 +56,7 @@ describe('App', () => {
   });
 
   it('shows the empty state when no articles are returned', async () => {
-    mockedFetchNews.mockResolvedValue([]);
+    mockedFetchNews.mockResolvedValue(buildNewsPage([]));
     render(<App />);
 
     expect(await screen.findByText('No articles found')).toBeInTheDocument();
@@ -58,18 +69,18 @@ describe('App', () => {
     expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
 
     // Retry refetches; this time it succeeds.
-    mockedFetchNews.mockResolvedValueOnce([buildArticle()]);
+    mockedFetchNews.mockResolvedValueOnce(buildNewsPage([buildArticle()]));
     await userEvent.click(screen.getByRole('button', { name: /retry/i }));
 
     expect(await screen.findByText('Drone delivers medical supplies')).toBeInTheDocument();
   });
 
   it('refetches with the search query after debounce', async () => {
-    mockedFetchNews.mockImplementation((query?: string) =>
+    mockedFetchNews.mockImplementation(({ query } = {}) =>
       Promise.resolve(
         query === 'surveillance'
-          ? [buildArticle({ id: 'surv', title: 'Drone surveillance program' })]
-          : [buildArticle()],
+          ? buildNewsPage([buildArticle({ id: 'surv', title: 'Drone surveillance program' })])
+          : buildNewsPage([buildArticle()]),
       ),
     );
     render(<App />);
@@ -79,13 +90,26 @@ describe('App', () => {
     await userEvent.type(screen.getByRole('textbox', { name: /search drone news/i }), 'surveillance');
 
     await waitFor(() => {
-      expect(mockedFetchNews).toHaveBeenCalledWith('surveillance');
+      expect(mockedFetchNews).toHaveBeenCalledWith(expect.objectContaining({ query: 'surveillance', page: 1 }));
     });
     expect(await screen.findByText('Drone surveillance program')).toBeInTheDocument();
   });
 
+  it('renders pagination and fetches the next page when a page is clicked', async () => {
+    mockedFetchNews.mockResolvedValue(buildNewsPage([buildArticle()], { total: 60, totalPages: 3 }));
+    render(<App />);
+
+    expect(await screen.findByText('Drone delivers medical supplies')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: '2' }));
+
+    await waitFor(() => {
+      expect(mockedFetchNews).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }));
+    });
+  });
+
   it('opens the author modal when an author is clicked', async () => {
-    mockedFetchNews.mockResolvedValue([buildArticle()]);
+    mockedFetchNews.mockResolvedValue(buildNewsPage([buildArticle()]));
     mockedFetchAuthor.mockResolvedValue({
       name: 'Jane Doe',
       summary: 'Jane Doe is an aviation journalist.',

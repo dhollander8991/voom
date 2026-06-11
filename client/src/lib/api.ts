@@ -1,8 +1,17 @@
 import type { Article, AuthorInfo } from '../types';
 
-interface NewsResponse {
+/** A page of news plus pagination metadata, mirroring the backend response. */
+export interface NewsPage {
   articles: Article[];
   total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface FetchNewsOptions {
+  query?: string;
+  page?: number;
 }
 
 interface AuthorResponse {
@@ -18,22 +27,23 @@ function buildUrl(path: string): string {
 }
 
 /**
- * Fetches the latest news articles, optionally filtered by a search query.
- * Throws on non-2xx responses so callers can render an error state.
+ * Fetches one page of news, optionally filtered by a search query. Returns the
+ * page plus pagination metadata. Throws on non-2xx so callers can render an
+ * error state.
  */
-export async function fetchNews(query?: string): Promise<Article[]> {
+export async function fetchNews({ query, page = 1 }: FetchNewsOptions = {}): Promise<NewsPage> {
   const url = new URL(buildUrl('/api/news'), window.location.origin);
   if (query && query.trim().length > 0) {
     url.searchParams.set('q', query.trim());
   }
+  url.searchParams.set('page', String(page));
 
   const response = await fetch(url.toString());
   if (!response.ok) {
     throw new Error(`Failed to load news (status ${response.status})`);
   }
 
-  const data = (await response.json()) as NewsResponse;
-  return data.articles;
+  return (await response.json()) as NewsPage;
 }
 
 /**

@@ -5,16 +5,55 @@ import { articles } from '../schema.js';
 
 export interface FindLatestOptions {
   query?: string;
-  limit?: number;
+  page?: number;
+  pageSize?: number;
+}
+
+/** A page of articles plus the metadata a client needs to render pagination. */
+export interface PaginatedArticles {
+  articles: Article[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 /** Domain API over the articles table. Returned by {@link createArticleRepository}. */
 export interface ArticleRepository {
   upsertMany(incoming: Article[]): void;
-  findLatest(options?: FindLatestOptions): Article[];
+  findLatest(options?: FindLatestOptions): PaginatedArticles;
 }
 
-const DEFAULT_LIMIT = 100;
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
+/**
+ * Builds the search WHERE clause shared by the page query and the count query.
+ * Each word must appear in at least one searched column (OR within a word), and
+ * every word must match (AND across words). SQLite's LIKE is case-insensitive
+ * for ASCII, which is the behavior we want. Returns undefined for no filter.
+ */
+function buildSearchCondition(query?: string): SQL | undefined {
+  const words = (query ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+
+  if (words.length === 0) {
+    return undefined;
+  }
+
+  const wordConditions = words.map((word) => {
+    const pattern = `%${word}%`;
+    return or(
+      like(articles.title, pattern),
+      like(articles.description, pattern),
+      like(articles.content, pattern),
+    ) as SQL;
+  });
+
+  return and(...wordConditions);
+}
 
 /** Strips the storage-only `fetchedAt` column off a row to yield a plain
  * Article. Drizzle already maps snake_case columns to camelCase fields. */
@@ -73,38 +112,41 @@ export function createArticleRepository(database: AppDatabase): ArticleRepositor
     },
 
     /**
-     * Returns the most recent articles, newest first. When `query` is provided,
-     * results are filtered with a case-insensitive LIKE across title,
-     * description, and content; multiple words are AND-combined so every word
-     * must appear somewhere in those fields.
+     * Returns one page of the most recent articles (newest first), plus the
+     * total matching count so the client can render pagination. When `query` is
+     * provided, results are filtered with a case-insensitive multi-word AND
+     * search across title, description, and content.
      */
-    findLatest({ query, limit = DEFAULT_LIMIT }: FindLatestOptions = {}): Article[] {
-      const words = (query ?? '')
-        .trim()
-        .split(/\s+/)
-        .filter((word) => word.length > 0);
+    findLatest({ query, page = 1, pageSize = DEFAULT_PAGE_SIZE }: FindLatestOptions = {}): PaginatedArticles {
+      const safePage = Math.max(1, Math.floor(page));
+      const safePageSize = Math.min(Math.max(1, Math.floor(pageSize)), MAX_PAGE_SIZE);
+      const where = buildSearchCondition(query);
 
-      // Each word must appear in at least one searched column (OR within a
-      // word), and every word must match (AND across words). SQLite's LIKE is
-      // case-insensitive for ASCII, which is the behavior we want.
-      const wordConditions: SQL[] = words.map((word) => {
-        const pattern = `%${word}%`;
-        return or(
-          like(articles.title, pattern),
-          like(articles.description, pattern),
-          like(articles.content, pattern),
-        ) as SQL;
-      });
+      // Total across all pages — needed to compute totalPages. Counted with the
+      // same WHERE so the count matches what the page query filters.
+      const totalRow = database
+        .select({ value: sql<number>`count(*)` })
+        .from(articles)
+        .where(where)
+        .get();
+      const total = totalRow?.value ?? 0;
 
       const rows = database
         .select()
         .from(articles)
-        .where(wordConditions.length > 0 ? and(...wordConditions) : undefined)
+        .where(where)
         .orderBy(desc(articles.publishedAt))
-        .limit(limit)
+        .limit(safePageSize)
+        .offset((safePage - 1) * safePageSize)
         .all();
 
-      return rows.map(rowToArticle);
+      return {
+        articles: rows.map(rowToArticle),
+        total,
+        page: safePage,
+        pageSize: safePageSize,
+        totalPages: Math.max(1, Math.ceil(total / safePageSize)),
+      };
     },
   };
 }

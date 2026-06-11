@@ -1,21 +1,21 @@
 import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { fetchNews } from '../lib/api';
-import type { Article } from '../types';
+import { fetchNews, type NewsPage } from '../lib/api';
 
 export interface UseNewsOptions {
   query: string;
+  page: number;
 }
 
 /**
- * Loads news for the given query. React Query keys the cache on the query, so
- * switching back to a previous search is instant, and `keepPreviousData` keeps
- * the current grid visible while the next search loads instead of flashing
- * skeletons on every keystroke.
+ * Loads one page of news for the given query. React Query keys the cache on
+ * (query, page), so revisiting a page is instant, and `keepPreviousData` keeps
+ * the current grid visible while the next page/search loads instead of flashing
+ * skeletons.
  */
-export function useNews({ query }: UseNewsOptions): UseQueryResult<Article[]> {
+export function useNews({ query, page }: UseNewsOptions): UseQueryResult<NewsPage> {
   return useQuery({
-    queryKey: ['news', query],
-    queryFn: () => fetchNews(query),
+    queryKey: ['news', query, page],
+    queryFn: () => fetchNews({ query, page }),
     placeholderData: keepPreviousData,
   });
 }
