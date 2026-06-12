@@ -4,6 +4,7 @@
   "description": "VOOM Drone News — a lean TypeScript monorepo (Express + SQLite backend, React 19 + Mantine 9 frontend).",
   "private": true,
   "workspaces": [
+    "shared",
     "client",
     "server"
   ],

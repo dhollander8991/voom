@@ -2,7 +2,7 @@ import { Container, Group, Input, TextInput, Title } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 import classes from './Header.module.css';
 
-export interface HeaderProps {
+interface HeaderProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
 }

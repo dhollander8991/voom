@@ -1,15 +1,15 @@
 import cron from 'node-cron';
-import type { NewsApiClient } from '../clients/NewsApiClient.js';
-import type { ArticleRepository } from '../repositories/ArticleRepository.js';
+import type { NewsApiClient } from '../clients/newsApiClient.js';
+import type { ArticleRepository } from '../repositories/articleRepository.js';
 
-export interface NewsPollerOptions {
+interface NewsPollerOptions {
   newsApiClient: NewsApiClient;
   articleRepository: ArticleRepository;
   pollIntervalMinutes: number;
 }
 
 /** News ingestion controller. Returned by {@link createNewsPoller}. */
-export interface NewsPoller {
+interface NewsPoller {
   /** Fetches one batch from NewsAPI and persists it. */
   pollOnce(): Promise<void>;
   /** Runs an initial poll, then schedules recurring polls. */

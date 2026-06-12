@@ -2,7 +2,7 @@ import { Button, Stack, Text } from '@mantine/core';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import classes from './StateMessage.module.css';
 
-export interface ErrorStateProps {
+interface ErrorStateProps {
   onRetry: () => void;
 }
 

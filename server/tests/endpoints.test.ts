@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
 import { openDatabase, type AppDatabase } from '../src/db.js';
-import { createArticleRepository, type ArticleRepository } from '../src/repositories/ArticleRepository.js';
-import type { AuthorClient } from '../src/clients/AuthorClient.js';
+import { createArticleRepository, type ArticleRepository } from '../src/repositories/articleRepository.js';
+import type { AuthorClient } from '../src/clients/authorClient.js';
 import { createApp } from '../src/app.js';
-import type { Article, AuthorInfo } from '../src/types.js';
+import type { Article, AuthorInfo } from '@voom/shared';
 
 function buildArticle(overrides: Partial<Article> = {}): Article {
   // Spread overrides last so an explicit `null` is respected (unlike `??`).

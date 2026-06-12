@@ -1,4 +1,4 @@
-export interface FormatRelativeTimeOptions {
+interface FormatRelativeTimeOptions {
   isoTimestamp: string;
   /** Injectable for deterministic tests; defaults to now. */
   now?: Date;

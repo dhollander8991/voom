@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from '../test/render';
 import { NewsCard } from './NewsCard';
-import type { Article } from '../types';
+import type { Article } from '@voom/shared';
 
 afterEach(() => {
   vi.restoreAllMocks();

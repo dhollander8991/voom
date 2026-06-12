@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openDatabase, type AppDatabase } from '../src/db.js';
-import { createArticleRepository, type ArticleRepository } from '../src/repositories/ArticleRepository.js';
-import type { Article } from '../src/types.js';
+import { createArticleRepository, type ArticleRepository } from '../src/repositories/articleRepository.js';
+import type { Article } from '@voom/shared';
 
 function buildArticle(overrides: Partial<Article> = {}): Article {
   // Spread overrides last so an explicit `null` is respected (unlike `??`).
@@ -58,6 +58,17 @@ describe('ArticleRepository', () => {
 
     const orderedIds = repository.findLatest().articles.map((article) => article.id);
     expect(orderedIds).toEqual(['new', 'mid', 'old']);
+  });
+
+  it('sorts oldest-first when sort is "oldest"', () => {
+    repository.upsertMany([
+      buildArticle({ id: 'old', url: 'https://example.com/old', publishedAt: '2026-01-01T00:00:00Z' }),
+      buildArticle({ id: 'new', url: 'https://example.com/new', publishedAt: '2026-06-01T00:00:00Z' }),
+      buildArticle({ id: 'mid', url: 'https://example.com/mid', publishedAt: '2026-03-01T00:00:00Z' }),
+    ]);
+
+    const orderedIds = repository.findLatest({ sort: 'oldest' }).articles.map((article) => article.id);
+    expect(orderedIds).toEqual(['old', 'mid', 'new']);
   });
 
   it('filters case-insensitively across title, description, and content', () => {

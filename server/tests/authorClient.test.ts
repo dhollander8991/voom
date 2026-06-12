@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type Anthropic from '@anthropic-ai/sdk';
-import { createAuthorClient } from '../src/clients/AuthorClient.js';
+import { createAuthorClient } from '../src/clients/authorClient.js';
 
 /** Builds a stub Anthropic client whose messages.create returns a single text
  * block containing `text`, plus the create spy for assertions. */
@@ -55,6 +55,12 @@ describe('AuthorClient', () => {
   it('returns null when the response is not valid JSON (e.g. a refusal)', async () => {
     const { anthropicClient } = buildAnthropicStub('I cannot help with that.');
     const client = createAuthorClient({ apiKey: 'test', anthropicClient });
+
+    await expect(client.fetchSummary({ name: 'Jane Doe' })).resolves.toBeNull();
+  });
+
+  it('is disabled (resolves null) when no API key is configured', async () => {
+    const client = createAuthorClient({ apiKey: '' });
 
     await expect(client.fetchSummary({ name: 'Jane Doe' })).resolves.toBeNull();
   });

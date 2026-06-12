@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import type { AuthorClient } from '../clients/AuthorClient.js';
+import type { AuthorClient } from '../clients/authorClient.js';
 
-export interface AuthorsRouterOptions {
+interface AuthorsRouterOptions {
   authorClient: AuthorClient;
 }
 

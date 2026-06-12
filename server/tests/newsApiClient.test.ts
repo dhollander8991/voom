@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createNewsApiClient } from '../src/clients/NewsApiClient.js';
+import { createNewsApiClient } from '../src/clients/newsApiClient.js';
 import { hashUrl } from '../src/utils/hash.js';
 
 interface RawArticleOverrides {

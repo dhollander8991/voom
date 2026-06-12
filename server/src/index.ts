@@ -1,8 +1,8 @@
 import { loadConfig } from './config.js';
 import { openDatabase } from './db.js';
-import { createArticleRepository } from './repositories/ArticleRepository.js';
-import { createNewsApiClient } from './clients/NewsApiClient.js';
-import { createAuthorClient } from './clients/AuthorClient.js';
+import { createArticleRepository } from './repositories/articleRepository.js';
+import { createNewsApiClient } from './clients/newsApiClient.js';
+import { createAuthorClient } from './clients/authorClient.js';
 import { createNewsPoller } from './services/poller.js';
 import { createApp } from './app.js';
 
@@ -13,6 +13,9 @@ function main(): void {
   const articleRepository = createArticleRepository(database);
   const newsApiClient = createNewsApiClient({ apiKey: config.newsApiKey });
   const authorClient = createAuthorClient({ apiKey: config.claudeApiKey });
+  if (!config.claudeApiKey) {
+    console.warn('[server] CLAUDE_API_KEY not set — author summaries are disabled.');
+  }
 
   const poller = createNewsPoller({
     newsApiClient,

@@ -1,14 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '../test/render';
 import { AuthorModal } from './AuthorModal';
-import { fetchAuthor } from '../lib/api';
-import type { AuthorInfo } from '../types';
+import { apiQuery } from '../lib/api';
+import type { AuthorInfo } from '@voom/shared';
 
-vi.mock('../lib/api', () => ({
-  fetchAuthor: vi.fn(),
-}));
+vi.mock('../lib/api', () => ({ apiQuery: vi.fn() }));
 
-const mockedFetchAuthor = vi.mocked(fetchAuthor);
+const mockedApiQuery = vi.mocked(apiQuery);
 
 const AUTHOR: AuthorInfo = {
   name: 'Jane Doe',
@@ -17,12 +15,12 @@ const AUTHOR: AuthorInfo = {
 
 describe('AuthorModal', () => {
   beforeEach(() => {
-    mockedFetchAuthor.mockReset();
+    mockedApiQuery.mockReset();
   });
 
   it('shows skeletons while the author is loading', () => {
     // A pending promise keeps the modal in its loading state.
-    mockedFetchAuthor.mockReturnValue(new Promise(() => {}));
+    mockedApiQuery.mockReturnValue(new Promise(() => {}));
     // The Modal renders into a portal on document.body, not into `container`.
     render(<AuthorModal authorName="Jane Doe" onClose={vi.fn()} />);
 
@@ -30,14 +28,14 @@ describe('AuthorModal', () => {
   });
 
   it('renders the summary on success', async () => {
-    mockedFetchAuthor.mockResolvedValue(AUTHOR);
+    mockedApiQuery.mockResolvedValue({ author: AUTHOR });
     render(<AuthorModal authorName="Jane Doe" onClose={vi.fn()} />);
 
     expect(await screen.findByText('Jane Doe is an aviation journalist.')).toBeInTheDocument();
   });
 
   it('shows a fallback message when no author info is available', async () => {
-    mockedFetchAuthor.mockResolvedValue(null);
+    mockedApiQuery.mockResolvedValue({ author: null });
     render(<AuthorModal authorName="Nobody" onClose={vi.fn()} />);
 
     expect(await screen.findByText('No author information available.')).toBeInTheDocument();
@@ -45,6 +43,6 @@ describe('AuthorModal', () => {
 
   it('does not fetch when closed (authorName is null)', () => {
     render(<AuthorModal authorName={null} onClose={vi.fn()} />);
-    expect(mockedFetchAuthor).not.toHaveBeenCalled();
+    expect(mockedApiQuery).not.toHaveBeenCalled();
   });
 });

@@ -1,12 +1,12 @@
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
 import cors from 'cors';
-import type { ArticleRepository } from './repositories/ArticleRepository.js';
-import type { AuthorClient } from './clients/AuthorClient.js';
+import type { ArticleRepository } from './repositories/articleRepository.js';
+import type { AuthorClient } from './clients/authorClient.js';
 import { createNewsRouter } from './routes/news.js';
 import { createAuthorsRouter } from './routes/authors.js';
 import { createHealthRouter } from './routes/health.js';
 
-export interface CreateAppOptions {
+interface CreateAppOptions {
   articleRepository: ArticleRepository;
   authorClient: AuthorClient;
 }

@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { AuthorInfo } from '../types.js';
+import type { AuthorInfo } from '@voom/shared';
 
 const MODEL = 'claude-haiku-4-5';
 // Web search adds tool-use blocks before the final answer, so allow more room.
@@ -33,13 +33,13 @@ interface AuthorSummaryResult {
   summary: string;
 }
 
-export interface AuthorClientOptions {
+interface AuthorClientOptions {
   apiKey: string;
   /** Injectable for tests; defaults to a real Anthropic client. */
   anthropicClient?: Anthropic;
 }
 
-export interface FetchSummaryOptions {
+interface FetchSummaryOptions {
   name: string;
 }
 
@@ -62,6 +62,13 @@ function extractText(message: Anthropic.Message): string | null {
  * `found: false`), which the UI renders as its empty/"no info" state.
  */
 export function createAuthorClient({ apiKey, anthropicClient }: AuthorClientOptions): AuthorClient {
+  // No key (and no injected client) → the feature is disabled. Resolve to null
+  // so the endpoint answers 200 { author: null } and the UI shows its empty
+  // state, rather than failing the request.
+  if (!apiKey && !anthropicClient) {
+    return { fetchSummary: async () => null };
+  }
+
   const client = anthropicClient ?? new Anthropic({ apiKey });
 
   return {

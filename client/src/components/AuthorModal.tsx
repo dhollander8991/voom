@@ -1,8 +1,8 @@
 import { Modal, Skeleton, Stack, Text } from '@mantine/core';
-import { useAuthor } from '../hooks/useAuthor';
+import { useAuthor } from '../queries/news.queries';
 import classes from './AuthorModal.module.css';
 
-export interface AuthorModalProps {
+interface AuthorModalProps {
   /** Author name to display and look up, or null when the modal is closed. */
   authorName: string | null;
   onClose: () => void;

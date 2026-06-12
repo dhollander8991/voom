@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-export interface AppConfig {
+interface AppConfig {
   newsApiKey: string;
   claudeApiKey: string;
   port: number;
@@ -19,10 +19,9 @@ export function loadConfig(): AppConfig {
     throw new Error('NEWS_API_KEY is required. Copy server/.env.example to server/.env and set it.');
   }
 
+  // Optional: when unset, the author-summary feature is disabled (the endpoint
+  // returns { author: null }) but the rest of the app runs normally.
   const claudeApiKey = process.env.CLAUDE_API_KEY ?? '';
-  if (!claudeApiKey) {
-    throw new Error('CLAUDE_API_KEY is required. Copy server/.env.example to server/.env and set it.');
-  }
 
   return {
     newsApiKey,

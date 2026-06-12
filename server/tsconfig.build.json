@@ -4,7 +4,10 @@
     "noEmit": false,
     "outDir": "dist",
     "rootDir": "src",
-    "declaration": true,
+    // This is an application, not a library — nothing consumes the emitted
+    // .d.ts, so skip declaration emit (it also lets internal-only types stay
+    // unexported). Source maps stay on for readable stack traces.
+    "declaration": false,
     "sourceMap": true
   },
   "include": ["src"],

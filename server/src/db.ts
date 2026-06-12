@@ -14,7 +14,7 @@ import * as schema from './schema.js';
  */
 export type AppDatabase = ReturnType<typeof drizzle<typeof schema>>;
 
-export interface OpenDatabaseOptions {
+interface OpenDatabaseOptions {
   databasePath: string;
 }
 

@@ -1,11 +1,11 @@
 import { SimpleGrid } from '@mantine/core';
-import type { Article } from '../types';
+import type { Article } from '@voom/shared';
 import { NewsCard } from './NewsCard';
 import { NewsCardSkeleton } from './NewsCardSkeleton';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
 
-export interface NewsFeedProps {
+interface NewsFeedProps {
   articles: Article[];
   isPending: boolean;
   isError: boolean;

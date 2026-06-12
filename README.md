@@ -31,10 +31,10 @@ node-cron poller ──> NewsAPI ──> normalize+dedupe ──> SQLite ──>
 ## Architecture
 
 - **Poller** (`server/src/services/poller.ts`) — runs once immediately at startup so the DB is warm on the first request, then on a cron schedule. A failed poll is logged, never thrown; one bad fetch can't take the process down.
-- **NewsApiClient** (`server/src/clients/NewsApiClient.ts`) — hits `/v2/everything?q=drone OR drones`, normalizes each result into our `Article` shape, and derives a stable `id` by SHA-1 hashing the article URL.
+- **NewsApiClient** (`server/src/clients/newsApiClient.ts`) — hits `/v2/everything?q=drone OR drones`, normalizes each result into our `Article` shape, and derives a stable `id` by SHA-1 hashing the article URL.
 - **Dependencies are factory functions, not classes.** `createArticleRepository`, `createNewsApiClient`, `createAuthorClient`, and `createNewsPoller` each take their dependencies and return a plain object — no `class`/`constructor`/`this`. Same dependency injection and testability, less ceremony.
-- **AuthorClient** (`server/src/clients/AuthorClient.ts`) — `createAuthorClient({ apiKey })` wraps the Anthropic SDK. It gives Claude (`claude-haiku-4-5`) the server-side **web search** tool, asks it to look up and validate the byline, and to return a structured `{ found, summary }` JSON (structured outputs guarantee clean JSON — no markdown fences). When nothing is found the endpoint returns `200 { author: null }` (a valid result of a successful request, not a 404). Tests inject a stub Anthropic client, so no real API call is made.
-- **ArticleRepository** (`server/src/repositories/ArticleRepository.ts`) — `createArticleRepository(db)` takes a Drizzle handle, so tests hand it an in-memory DB and it owns no connection lifecycle. Upserts dedupe on URL via `onConflictDoUpdate`; `findLatest` builds its case-insensitive multi-word AND filter with Drizzle's `and`/`or`/`like` helpers, ordered by publish date. The table is defined once in `server/src/schema.ts`, which also infers the row type.
+- **AuthorClient** (`server/src/clients/authorClient.ts`) — `createAuthorClient({ apiKey })` wraps the Anthropic SDK. It gives Claude (`claude-haiku-4-5`) the server-side **web search** tool, asks it to look up and validate the byline, and to return a structured `{ found, summary }` JSON (structured outputs guarantee clean JSON — no markdown fences). When nothing is found the endpoint returns `200 { author: null }` (a valid result of a successful request, not a 404). Tests inject a stub Anthropic client, so no real API call is made.
+- **ArticleRepository** (`server/src/repositories/articleRepository.ts`) — `createArticleRepository(db)` takes a Drizzle handle, so tests hand it an in-memory DB and it owns no connection lifecycle. Upserts dedupe on URL via `onConflictDoUpdate`; `findLatest` builds its case-insensitive multi-word AND filter with Drizzle's `and`/`or`/`like` helpers, ordered by publish date. The table is defined once in `server/src/schema.ts`, which also infers the row type.
 - **Express app** (`server/src/app.ts`) — built from injected dependencies and free of process concerns (no `listen`, no DB opening), so Supertest can exercise it directly.
 - **Frontend** — `App` owns a debounced search value that drives `useNews` (a thin `useQuery` wrapper keyed on the query, so repeat searches are served from cache and the grid doesn't flash on every keystroke). Clicking an author opens `AuthorModal`, whose `useAuthor` query is disabled until a name is set. Raw `fetch` access is isolated in `client/src/lib/api.ts`; React Query owns caching and request state on top of it.
 
@@ -42,8 +42,8 @@ node-cron poller ──> NewsAPI ──> normalize+dedupe ──> SQLite ──>
 
 - **Node 18+** (developed on Node 22). Native `fetch` and better-sqlite3 prebuilds need a modern Node.
 - **React 19.2 / Mantine 9** — Mantine 9 requires React 19.2+. This is already pinned in `client/package.json`; just don't downgrade React.
-- **A free NewsAPI key** — register at https://newsapi.org/register and copy the key.
-- **An Anthropic API key** — for the author-summary feature. Create one at https://console.anthropic.com/settings/keys.
+- **A free NewsAPI key** — register at https://newsapi.org/register and copy the key (required).
+- **An Anthropic API key** *(optional)* — only for the author-summary feature. Without it the app runs normally and the author endpoint returns no info. Create one at https://console.anthropic.com/settings/keys.
 
 ## Setup & run
 
@@ -53,8 +53,8 @@ npm install
 
 # 2. Configure the backend
 cp server/.env.example server/.env
-#   then edit server/.env and set NEWS_API_KEY=<your key> and CLAUDE_API_KEY=<your key>
-#   (the server fails fast at startup if either is missing)
+#   then edit server/.env and set NEWS_API_KEY=<your key> (required).
+#   CLAUDE_API_KEY is optional — set it to enable author summaries.
 
 # 3. (optional) Configure the frontend
 cp client/.env.example client/.env
@@ -87,6 +87,7 @@ One page of cached articles, newest first.
 | `q` | string | — | Optional. Space-separated keywords, AND-combined, case-insensitive across title/description/content. |
 | `page` | number | 1 | 1-based. Clamped to ≥ 1. |
 | `pageSize` | number | 20 | Items per page. Capped at 100. |
+| `sort` | `newest` \| `oldest` | `newest` | Order by publish date. |
 
 Returns the page plus pagination metadata. `total` is the count of all matching articles (not just this page), so the client can render page controls.
 
@@ -147,7 +148,7 @@ The schema is defined once as a typed Drizzle table in `server/src/schema.ts`. `
 
 ## Bonuses implemented
 
-- **Page enhancements** — debounced live search, responsive 1/2/3-column grid, image fallback so a null image never breaks layout, relative timestamps ("3h ago"), and full loading/empty/error states with retry.
+- **Page enhancements** — debounced live search with a clear button, sort (newest/oldest), pagination, **shareable deep links** (the search/page/sort live in the URL query string, so a filtered view can be copied and shared), clickable cards (hover lift + open article), an author modal, responsive 1/2/3-column grid, image fallback so a null image never breaks layout, relative timestamps ("3h ago"), and full loading/empty/error states with retry.
 - **Claude author endpoint + modal** — click an author to open a modal with a short Claude-generated summary of who they are; when Claude has no reliable information the modal shows an empty/"no info" state.
 - **Unit tests on both sides** — see below.
 
@@ -174,14 +175,16 @@ Coverage uses Vitest's v8 provider in both workspaces; the text summary prints t
 ```
 voom/
 ├── package.json              # workspaces + dev/build/test/lint scripts
+├── shared/                   # @voom/shared — API-contract types (single source)
+│   └── index.ts              # Article, AuthorInfo, SortOrder, PaginatedArticles
 ├── client/                   # Vite + React 19.2 + Mantine 9
 │   ├── postcss.config.cjs    # postcss-preset-mantine + breakpoint vars
 │   ├── vite.config.ts        # dev proxy /api -> :3001, vitest config
 │   └── src/
 │       ├── main.tsx          # MantineProvider + theme
 │       ├── App.tsx           # page: search -> feed, author modal
-│       ├── lib/api.ts        # fetchNews / fetchAuthor
-│       ├── hooks/            # useNews, useAuthor
+│       ├── lib/api.ts        # generic apiQuery<T>
+│       ├── queries/          # news.queries (useNews/useAuthor) + news.constants (keys)
 │       ├── components/       # Header, NewsCard, AuthorModal, states (+ .module.css)
 │       └── test/             # setup (matchMedia/ResizeObserver), custom render
 └── server/                   # Express + TypeScript
@@ -204,6 +207,6 @@ voom/
 
 - **NewsAPI free tier is localhost-only and 100 req/day.** This app is built to run locally; a real deployment needs a paid NewsAPI plan (or a different source). The 30-minute poll interval is tuned for the free quota.
 - **Freshness lags by up to the poll interval.** News is at most ~15 minutes stale by design — that's the trade for staying under the rate limit. At 15 min the poller makes ~96 calls/day, which leaves only ~4 requests of headroom under the 100/day cap, so frequent restarts (each does an immediate poll) could push you over; raise `POLL_INTERVAL_MINUTES` if that's a concern.
-- **Author summaries use live web search.** Claude searches the web to look up and verify the byline, so even lesser-known journalists get a summary (not just names already in the model's training data). A byline can be an individual (journalist, writer, public figure) or a known news organization. Only generic, non-identifying labels ("Staff", "Editorial Team", "Correspondent"), clearly non-news entities, or bylines search can't verify resolve to `author: null` (HTTP 200), which the modal renders as its empty state. Trade-offs: each lookup makes a (billable) web search and adds ~2-5s latency, and summaries carry the usual LLM/search caveats — tune `MAX_WEB_SEARCHES` in `AuthorClient.ts` or drop the tool to revert to memory-only.
+- **Author summaries use live web search.** Claude searches the web to look up and verify the byline, so even lesser-known journalists get a summary (not just names already in the model's training data). A byline can be an individual (journalist, writer, public figure) or a known news organization. Only generic, non-identifying labels ("Staff", "Editorial Team", "Correspondent"), clearly non-news entities, or bylines search can't verify resolve to `author: null` (HTTP 200), which the modal renders as its empty state. Trade-offs: each lookup makes a (billable) web search and adds ~2-5s latency, and summaries carry the usual LLM/search caveats — tune `MAX_WEB_SEARCHES` in `authorClient.ts` or drop the tool to revert to memory-only.
 ```
 

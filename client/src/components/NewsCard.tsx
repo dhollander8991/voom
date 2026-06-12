@@ -1,9 +1,9 @@
 import { Anchor, Badge, Card, Group, Image, Text, UnstyledButton } from '@mantine/core';
-import type { Article } from '../types';
+import type { Article } from '@voom/shared';
 import { formatRelativeTime } from '../lib/relativeTime';
 import classes from './NewsCard.module.css';
 
-export interface NewsCardProps {
+interface NewsCardProps {
   article: Article;
   onAuthorClick: (authorName: string) => void;
 }

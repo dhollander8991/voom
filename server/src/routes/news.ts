@@ -1,17 +1,17 @@
 import { Router } from 'express';
-import type { ArticleRepository } from '../repositories/ArticleRepository.js';
+import type { ArticleRepository } from '../repositories/articleRepository.js';
 
-export interface NewsRouterOptions {
+interface NewsRouterOptions {
   articleRepository: ArticleRepository;
 }
 
 const DEFAULT_PAGE_SIZE = 20;
 
 /**
- * GET /api/news?q=<keywords>&page=<n>&pageSize=<n>
+ * GET /api/news?q=<keywords>&page=<n>&pageSize=<n>&sort=newest|oldest
  * Returns one page of the latest stored articles plus pagination metadata
  * ({ articles, total, page, pageSize, totalPages }). The repository clamps page
- * (min 1) and pageSize (1..100).
+ * (min 1) and pageSize (1..100); sort defaults to newest.
  */
 export function createNewsRouter({ articleRepository }: NewsRouterOptions): Router {
   const router = Router();
@@ -20,8 +20,9 @@ export function createNewsRouter({ articleRepository }: NewsRouterOptions): Rout
     const query = typeof request.query.q === 'string' ? request.query.q : undefined;
     const page = Number(request.query.page) || 1;
     const pageSize = Number(request.query.pageSize) || DEFAULT_PAGE_SIZE;
+    const sort = request.query.sort === 'oldest' ? 'oldest' : 'newest';
 
-    const result = articleRepository.findLatest({ query, page, pageSize });
+    const result = articleRepository.findLatest({ query, page, pageSize, sort });
     response.json(result);
   });
 

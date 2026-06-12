@@ -25,7 +25,8 @@
   max-width: rem(320px);
 }
 
-@media (max-width: $mantine-breakpoint-xs) {
+/* Mantine xs breakpoint (36em) as a literal so the media query is valid CSS. */
+@media (max-width: 36em) {
   .title {
     font-size: rem(18px);
   }

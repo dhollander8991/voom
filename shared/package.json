@@ -1,0 +1,11 @@
+{
+  "name": "@voom/shared",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./index.ts"
+    }
+  },
+  "types": "./index.ts"
+}

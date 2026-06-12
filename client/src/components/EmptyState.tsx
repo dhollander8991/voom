@@ -2,7 +2,7 @@ import { Stack, Text } from '@mantine/core';
 import { IconDrone } from '@tabler/icons-react';
 import classes from './StateMessage.module.css';
 
-export interface EmptyStateProps {
+interface EmptyStateProps {
   query: string;
 }
 

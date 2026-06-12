@@ -1,21 +1,13 @@
-import { and, desc, like, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, like, or, sql, type SQL } from 'drizzle-orm';
 import type { AppDatabase } from '../db.js';
-import type { Article } from '../types.js';
+import type { Article, PaginatedArticles, SortOrder } from '@voom/shared';
 import { articles } from '../schema.js';
 
-export interface FindLatestOptions {
+interface FindLatestOptions {
   query?: string;
   page?: number;
   pageSize?: number;
-}
-
-/** A page of articles plus the metadata a client needs to render pagination. */
-export interface PaginatedArticles {
-  articles: Article[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+  sort?: SortOrder;
 }
 
 /** Domain API over the articles table. Returned by {@link createArticleRepository}. */
@@ -117,10 +109,16 @@ export function createArticleRepository(database: AppDatabase): ArticleRepositor
      * provided, results are filtered with a case-insensitive multi-word AND
      * search across title, description, and content.
      */
-    findLatest({ query, page = 1, pageSize = DEFAULT_PAGE_SIZE }: FindLatestOptions = {}): PaginatedArticles {
+    findLatest({
+      query,
+      page = 1,
+      pageSize = DEFAULT_PAGE_SIZE,
+      sort = 'newest',
+    }: FindLatestOptions = {}): PaginatedArticles {
       const safePage = Math.max(1, Math.floor(page));
       const safePageSize = Math.min(Math.max(1, Math.floor(pageSize)), MAX_PAGE_SIZE);
       const where = buildSearchCondition(query);
+      const orderBy = sort === 'oldest' ? asc(articles.publishedAt) : desc(articles.publishedAt);
 
       // Total across all pages — needed to compute totalPages. Counted with the
       // same WHERE so the count matches what the page query filters.
@@ -135,7 +133,7 @@ export function createArticleRepository(database: AppDatabase): ArticleRepositor
         .select()
         .from(articles)
         .where(where)
-        .orderBy(desc(articles.publishedAt))
+        .orderBy(orderBy)
         .limit(safePageSize)
         .offset((safePage - 1) * safePageSize)
         .all();

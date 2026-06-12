@@ -1,4 +1,4 @@
-import type { Article } from '../types.js';
+import type { Article } from '@voom/shared';
 import { hashUrl } from '../utils/hash.js';
 
 const NEWS_API_ENDPOINT = 'https://newsapi.org/v2/everything';
@@ -21,13 +21,13 @@ interface NewsApiResponse {
   articles?: NewsApiArticle[];
 }
 
-export interface NewsApiClientOptions {
+interface NewsApiClientOptions {
   apiKey: string;
   /** Injectable for tests; defaults to the global fetch. */
   fetchImplementation?: typeof fetch;
 }
 
-export interface FetchEverythingOptions {
+interface FetchEverythingOptions {
   /** NewsAPI query string. Defaults to drone coverage. */
   query?: string;
   pageSize?: number;
