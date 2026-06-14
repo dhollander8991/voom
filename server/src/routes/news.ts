@@ -5,7 +5,8 @@ interface NewsRouterOptions {
   articleRepository: ArticleRepository;
 }
 
-const DEFAULT_PAGE_SIZE = 20;
+// 12 fills complete rows at every grid breakpoint (1/2/3 cols all divide 12).
+const DEFAULT_PAGE_SIZE = 12;
 
 /**
  * GET /api/news?q=<keywords>&page=<n>&pageSize=<n>&sort=newest|oldest

@@ -86,7 +86,7 @@ One page of cached articles, newest first.
 | --- | --- | --- | --- |
 | `q` | string | — | Optional. Space-separated keywords, AND-combined, case-insensitive across title/description/content. |
 | `page` | number | 1 | 1-based. Clamped to ≥ 1. |
-| `pageSize` | number | 20 | Items per page. Capped at 100. |
+| `pageSize` | number | 12 | Items per page. Capped at 100. |
 | `sort` | `newest` \| `oldest` | `newest` | Order by publish date. |
 
 Returns the page plus pagination metadata. `total` is the count of all matching articles (not just this page), so the client can render page controls.
@@ -95,8 +95,8 @@ Returns the page plus pagination metadata. `total` is the count of all matching 
 {
   "total": 188,
   "page": 1,
-  "pageSize": 20,
-  "totalPages": 10,
+  "pageSize": 12,
+  "totalPages": 16,
   "articles": [
     {
       "id": "b87376603b46a9195c2981eedc0db1de900d8b67",
@@ -205,7 +205,7 @@ voom/
 
 ## Limitations
 
-- **NewsAPI free tier is localhost-only and 100 req/day.** This app is built to run locally; a real deployment needs a paid NewsAPI plan (or a different source). The 30-minute poll interval is tuned for the free quota.
+- **NewsAPI free tier is localhost-only and 100 req/day.** This app is built to run locally; a real deployment needs a paid NewsAPI plan (or a different source). The 15-minute poll interval is tuned for the free quota.
 - **Freshness lags by up to the poll interval.** News is at most ~15 minutes stale by design — that's the trade for staying under the rate limit. At 15 min the poller makes ~96 calls/day, which leaves only ~4 requests of headroom under the 100/day cap, so frequent restarts (each does an immediate poll) could push you over; raise `POLL_INTERVAL_MINUTES` if that's a concern.
 - **Author summaries use live web search.** Claude searches the web to look up and verify the byline, so even lesser-known journalists get a summary (not just names already in the model's training data). A byline can be an individual (journalist, writer, public figure) or a known news organization. Only generic, non-identifying labels ("Staff", "Editorial Team", "Correspondent"), clearly non-news entities, or bylines search can't verify resolve to `author: null` (HTTP 200), which the modal renders as its empty state. Trade-offs: each lookup makes a (billable) web search and adds ~2-5s latency, and summaries carry the usual LLM/search caveats — tune `MAX_WEB_SEARCHES` in `authorClient.ts` or drop the tool to revert to memory-only.
 ```
