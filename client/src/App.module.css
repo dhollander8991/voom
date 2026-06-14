@@ -7,7 +7,9 @@
 .main {
   flex: 1;
   width: 100%;
-  padding-top: var(--mantine-spacing-xl);
+  /* The header is position:fixed (out of flow), so reserve space for it (~70px)
+   * plus a gap, or the top of the content hides under it. */
+  padding-top: calc(4.5rem + var(--mantine-spacing-md));
   padding-bottom: var(--mantine-spacing-xl);
 }
 
