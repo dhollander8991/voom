@@ -19,7 +19,7 @@ node-cron poller ──> NewsAPI ──> normalize+dedupe ──> SQLite ──>
 | Monorepo | npm workspaces + `concurrently` | Built into npm. No NX/Turborepo daemon, config, or cache to babysit. |
 | Backend | Express + TypeScript | Boring, well-understood HTTP. No framework magic. |
 | Storage | better-sqlite3 | A single local file, synchronous API, zero server process. Perfect for a cache. |
-| Data access | Drizzle ORM + drizzle-kit | Type-safe queries over better-sqlite3 with no separate engine. Readable query builder instead of hand-built SQL strings + manual placeholders; `schema.ts` is the single source of truth and drizzle-kit generates the migrations. |
+| Data access | Drizzle ORM | Type-safe queries over better-sqlite3 with no separate engine — a readable query builder instead of hand-built SQL strings + manual placeholders. The single `articles` table is bootstrapped with `CREATE TABLE IF NOT EXISTS` (no migration tooling — the data is a disposable cache). |
 | HTTP | native `fetch` | Built into Node 18+. No axios/got dependency. |
 | Author summaries | Anthropic SDK (`@anthropic-ai/sdk`) | The official client for Claude — typed requests, retries, and error classes for free. Author bios come from `claude-haiku-4-5` with its server-side **web search** tool, so even lesser-known journalists are looked up and verified rather than answered from memory. No scraping or third-party API to maintain. |
 | Scheduler | node-cron | One small dep for "run this every N minutes". |
@@ -144,7 +144,7 @@ Always `200` on a well-formed request. The author is wrapped in an envelope; `au
 
 Articles live in one SQLite table (`articles`) at `server/data/news.db` (configurable via `DATABASE_PATH`). The `url` column is `UNIQUE`, and the `id` is a SHA-1 of that URL, so the same article always maps to the same row. `upsertMany` issues a Drizzle `insert(...).onConflictDoUpdate({ target: url })`, so re-polling refreshes existing rows in place instead of creating duplicates (the `id` is never overwritten, keeping each article's stable handle). Search uses `LIKE` over title/description/content, ordered by `published_at DESC`, with an index on `published_at`.
 
-The schema is defined once as a typed Drizzle table in `server/src/schema.ts`. `drizzle-kit generate` turns that into SQL migrations under `server/drizzle/`, and `openDatabase` (`db.ts`) applies them on startup via Drizzle's migrator — so opening the database always brings the schema up to date, including the in-memory databases used in tests. If you change `schema.ts`, run `npm run db:generate --workspace=server` to produce a new migration.
+The table is defined as a typed Drizzle table in `server/src/schema.ts` (which drives all queries). `openDatabase` (`db.ts`) bootstraps it with a `CREATE TABLE IF NOT EXISTS` that mirrors that definition — idempotent, so it runs safely on every startup and on the in-memory databases used in tests. There's no migration tooling: the data is a disposable cache (re-fetchable from NewsAPI), so if the schema ever changes you just delete the `.db` file and the next startup recreates it. (For an app with real data to preserve, you'd reach for proper migrations instead.)
 
 ## Bonuses implemented
 
@@ -189,13 +189,11 @@ voom/
 │       └── test/             # setup (matchMedia/ResizeObserver), custom render
 └── server/                   # Express + TypeScript
     ├── .env.example
-    ├── drizzle.config.ts     # drizzle-kit config (schema -> migrations)
-    ├── drizzle/              # generated SQL migrations (committed)
     └── src/
         ├── index.ts          # wires deps, starts poller + server
         ├── app.ts            # Express app from injected deps
-        ├── db.ts             # open connection + run Drizzle migrations
-        ├── schema.ts         # typed Drizzle table (single source of truth)
+        ├── db.ts             # open connection + bootstrap table (CREATE TABLE IF NOT EXISTS)
+        ├── schema.ts         # typed Drizzle table (drives queries)
         ├── config.ts         # env loading/validation
         ├── clients/          # createNewsApiClient, createAuthorClient (Claude)
         ├── repositories/     # createArticleRepository
