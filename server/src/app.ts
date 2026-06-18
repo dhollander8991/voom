@@ -4,7 +4,6 @@ import type { ArticleRepository } from './repositories/articleRepository.js';
 import type { AuthorClient } from './clients/authorClient.js';
 import { createNewsRouter } from './routes/news.js';
 import { createAuthorsRouter } from './routes/authors.js';
-import { createHealthRouter } from './routes/health.js';
 
 interface CreateAppOptions {
   articleRepository: ArticleRepository;
@@ -22,7 +21,7 @@ export function createApp({ articleRepository, authorClient }: CreateAppOptions)
   app.use(cors());
   app.use(express.json());
 
-  app.use('/api/health', createHealthRouter());
+  app.get('/api/health', (_request, response) => response.json({ status: 'ok' }));
   app.use('/api/news', createNewsRouter({ articleRepository }));
   app.use('/api/authors', createAuthorsRouter({ authorClient }));
 
