@@ -50,17 +50,8 @@ function buildSearchCondition(query?: string): SQL | undefined {
 /** Strips the storage-only `fetchedAt` column off a row to yield a plain
  * Article. Drizzle already maps snake_case columns to camelCase fields. */
 function rowToArticle(row: typeof articles.$inferSelect): Article {
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    content: row.content,
-    url: row.url,
-    imageUrl: row.imageUrl,
-    sourceName: row.sourceName,
-    author: row.author,
-    publishedAt: row.publishedAt,
-  };
+  const { fetchedAt, ...article } = row;
+  return article;
 }
 
 /**

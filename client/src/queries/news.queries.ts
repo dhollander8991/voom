@@ -1,6 +1,5 @@
 import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { apiQuery } from '../lib/api';
-import { authorKeys, newsKeys } from './news.constants';
 import type { AuthorInfo, PaginatedArticles, SortOrder } from '@voom/shared';
 
 interface UseNewsOptions {
@@ -17,7 +16,7 @@ interface UseNewsOptions {
  */
 export function useNews({ query, page, sort }: UseNewsOptions): UseQueryResult<PaginatedArticles> {
   return useQuery({
-    queryKey: newsKeys.list({ query, page, sort }),
+    queryKey: ['news', query, page, sort],
     queryFn: () =>
       apiQuery<PaginatedArticles>('/api/news', {
         q: query.trim() || undefined,
@@ -47,7 +46,7 @@ interface UseAuthorOptions {
  */
 export function useAuthor({ name }: UseAuthorOptions): UseQueryResult<AuthorInfo | null> {
   return useQuery({
-    queryKey: authorKeys.detail(name),
+    queryKey: ['author', name],
     queryFn: async () => {
       const { author } = await apiQuery<AuthorResponse>('/api/authors', { name: name ?? '' });
       return author;
